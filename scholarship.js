@@ -27,7 +27,51 @@ $("#studyLevelId option").each(function()
 studyLevelArray.splice(0,1);
 var i=0;
 var stateIndex=0,districtIndex=0,mandalIndex=0;
-getDistrictsForState(statesArray[stateIndex].id);
+for(var i=0;i<statesArray.length;i++){	
+	(function(i) {
+		getDistrictsForState(statesArray[i].id);
+     })(i);
+}
+	
+ function saveStateDataInDatabase(statesArray){
+ 	$.ajax({
+		type : "POST",
+		url : "http://localhost:4004/saveData",
+		dataType : 'json',
+		data : 
+		{
+			type : 'state',
+			data : statesArray
+		},
+		success : function(response) 
+		{				
+			console.log('states array saved')
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			//alert(xhr.status);
+		}
+	});
+ }
+
+function saveDistrictDataInDatabase(districtArray){ 	
+ 	$.ajax({
+		type : "POST",
+		url : "http://localhost:4004/saveData",
+		dataType : 'json',
+		data : 
+		{
+			type : 'district',
+			data : districtArray
+		},
+		success : function(response) 
+		{				
+			console.log('districts array saved')
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			//alert(xhr.status);
+		}
+	});
+ }
 
 function getDistrictsForState(stateId){
 	$.ajax({
@@ -44,17 +88,17 @@ function getDistrictsForState(stateId){
 		success : function(response) 
 		{				
 			var info = response.split("#");
-			districtArray=[];		    									
-		    for(var j=0;j<info.length;j++){			    	
+			districtArray=[];
+		    for(var j=0;j<info.length;j++){
 				(function(j) {
 					var districtObj={};
 					districtObj.stateId=stateId;
 			    	districtObj.districtId=info[j].split('@')[0];
-			    	districtObj.districtName=info[j].split('@')[1];
-			    	getMandalsForDistrict(stateId,districtObj.districtId)
-			    	districtArray.push(districtObj);			       	
+			    	districtObj.districtName=info[j].split('@')[1];			    	
+			    	districtArray.push(districtObj);
 			     })(j);
 		    }
+		    saveDistrictDataInDatabase(districtArray);
 		},
 		error : function(xhr, ajaxOptions, thrownError) {
 			//alert(xhr.status);

@@ -3,6 +3,7 @@
 
 //get names of all states in an array
 var statesArray =[],districtArray=[],mandalArray=[],studyLevelArray=[],instituteArray=[],institutes=[];
+var getDistrictType = 17,getMandalType=30;
 $("#studyStateId option").each(function()
 {
     var state={};
@@ -24,108 +25,108 @@ $("#studyLevelId option").each(function()
 });
 //for removing select option
 studyLevelArray.splice(0,1);
+var i=0;
+var stateIndex=0,districtIndex=0,mandalIndex=0;
+getDistrictsForState(statesArray[stateIndex].id);
 
-
-//function for getting an array of district objects with their state mapping and mandal objects with their district and state mapping
-for(var i=0; i<statesArray.length; i++){
-    (function(i) {
-       	$.ajax({
-			type : "POST",
-			url : "ajaxActions.do?mode=getDistrictsMandalsVillagesDropDownList",
-			dataType : 'html',
-			data : 
-			{
-				type : 17,
-				stateCode : statesArray[i].id,							
-				instId : 0,				
-				randomNo : Math.random()
-			},
-			success : function(response) 
-			{	
-				
-				var info = response.split("#");		    									
-			    for(var j=0;j<info.length;j++){			    	
-    				(function(j) {
-    					var districtObj={};
-    					districtObj.stateId=statesArray[i].id;
-				    	districtObj.districtId=info[j].split('@')[0];
-				    	districtObj.districtName=info[j].split('@')[1];
-				    	districtArray.push(districtObj);
-				       	$.ajax({
-							type : "POST",
-							url : "ajaxActions.do?mode=getDistrictsMandalsVillagesDropDownList",
-							dataType : 'html',
-							data : 
-							{
-								type : 30,
-								stateCode : statesArray[i].id,							
-								districtCode : districtObj.districtId,
-								levelId : 0, 				
-								randomNo : Math.random()
-							},
-							success : function(response) 
-							{
-								var infoMandal = response.split("#");				
-							    for(var k=0;k<infoMandal.length;k++){							    	
-							    	var mandalObj={};
-							    	mandalObj.stateId=statesArray[i].id;
-							    	mandalObj.districtId=districtObj.districtId;
-							    	mandalObj.mandalId=infoMandal[k].split('@')[0];
-							    	mandalObj.mandalName=infoMandal[k].split('@')[1];			    	
-							    	mandalArray.push(mandalObj);
-							    }
-							},
-							error : function(xhr, ajaxOptions, thrownError) {
-								//alert(xhr.status);
-							}
-						});
-				     })(j);			    	
-			    }
-			},
-			error : function(xhr, ajaxOptions, thrownError) {
-				//alert(xhr.status);
-			}
-		});
-     })(i);
+function getDistrictsForState(stateId){
+	$.ajax({
+		type : "POST",
+		url : "ajaxActions.do?mode=getDistrictsMandalsVillagesDropDownList",
+		dataType : 'html',
+		data : 
+		{
+			type : getDistrictType,
+			stateCode : stateId,
+			instId : 0,				
+			randomNo : Math.random()
+		},
+		success : function(response) 
+		{				
+			var info = response.split("#");
+			districtArray=[];		    									
+		    for(var j=0;j<info.length;j++){			    	
+				(function(j) {
+					var districtObj={};
+					districtObj.stateId=stateId;
+			    	districtObj.districtId=info[j].split('@')[0];
+			    	districtObj.districtName=info[j].split('@')[1];
+			    	getMandalsForDistrict(stateId,districtObj.districtId)
+			    	districtArray.push(districtObj);			       	
+			     })(j);
+		    }
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			//alert(xhr.status);
+		}
+	});    
 }
 
-//code for getting all institute names mandal wise
-//This is not complete
 
 
-for(var i=0; i<mandalArray.length; i++){	
-		(function(i) {			
-	       	$.ajax({
-				type : "POST",
-				url : "ajaxActions.do?mode=getInstitutionsList" ,
-				cache : false,
-				dataType : "html",
-				data : {
-					instState : mandalArray[i].stateId, 
-					instDist : mandalArray[i].districtId ,
-				  	instMandal : mandalArray[i].mandalId,
-				  	courseLevel : 0,
-				  	random : Math.random()
-				},
-				success : function(response) 
-				{					
-					var info = response.split("#");
-					// console.log(info)
-					for(var k=0;k<info.length;k++){
-//To ensure institutes are not repeated for different values of study levels we create a hashmap(array with character as key ) that checks if this institute has already been added to record
-						var instututeUuid=info[k].split('@')[0];
-							var instituteObj={};
-					    	instituteObj.stateId=mandalArray[i].stateId;
-					    	instituteObj.districtId=mandalArray[i].districtId;
-					    	instituteObj.mandalId=mandalArray[i].mandalId;
-					    	instituteObj.instututeUUId=instututeUuid;
-					    	instituteObj.mandalName=info[k].split('@')[1];
-					    	instituteArray.push(instituteObj);
-				    }					
-				},
-				error : function(xhr, ajaxOptions, thrownError) {
-					alert(xhr.status + " --> Error Ocucured while loading course info");
-				}
-			});
-	    })(i);
+function getMandalsForDistrict(stateId,districtId){
+	$.ajax({
+		type : "POST",
+		url : "ajaxActions.do?mode=getDistrictsMandalsVillagesDropDownList",
+		dataType : 'html',
+		data : 
+		{
+			type : getMandalType,
+			stateCode : stateId,							
+			districtCode : districtId,
+			levelId : 0, 				
+			randomNo : Math.random()
+		},
+		success : function(response) 
+		{
+			var infoMandal = response.split("#");
+			mandalArray=[];			
+		    for(var k=0;k<infoMandal.length;k++){							    	
+		    	var mandalObj={};
+		    	mandalObj.stateId=stateId;
+		    	mandalObj.districtId=districtId;
+		    	mandalObj.mandalId=parseInt(infoMandal[k].split('@')[0]);
+		    	mandalObj.mandalName=infoMandal[k].split('@')[1];
+		    	getInstitutesForMandal(stateId,districtId,mandalObj.mandalId)
+		    	mandalArray.push(mandalObj);
+		    }
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			//alert(xhr.status);
+		}
+	});
+}
+
+function getInstitutesForMandal(stateId,districtId,mandalId){
+	$.ajax({
+		type : "POST",
+		url : "ajaxActions.do?mode=getInstitutionsList" ,
+		cache : false,
+		dataType : "html",
+		data : {
+			instState : stateId,
+			instDist : districtId ,
+		  	instMandal : mandalId,
+		  	courseLevel : 0,
+		  	random : Math.random()
+		},
+		success : function(response) 
+		{			
+			var info = response.split("#");			
+			instituteArray=[];
+			for(var k=0;k<info.length;k++){
+				var instututeId=info[k].split('@')[0];
+				var instituteObj={};
+		    	instituteObj.stateId=stateId;
+		    	instituteObj.districtId=districtId;
+		    	instituteObj.mandalId=mandalId;
+		    	instituteObj.instututeId=parseInt(instututeId);
+		    	instituteObj.mandalName=info[k].split('@')[1];
+		    	instituteArray.push(instituteObj);
+		    }					
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			alert(xhr.status + " --> Error Ocucured while loading course info");
+		}
+	});
 }

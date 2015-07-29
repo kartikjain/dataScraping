@@ -4,6 +4,9 @@
 //get names of all states in an array
 var statesArray =[],districtArray=[],mandalArray=[],studyLevelArray=[],instituteArray=[],institutes=[];
 var getDistrictType = 17,getMandalType=30;
+
+//**********saving states data in database************
+
 $("#studyStateId option").each(function()
 {
     var state={};
@@ -14,26 +17,7 @@ $("#studyStateId option").each(function()
 //for removing select option
 statesArray.splice(0,1);
 
-
-//get names of study levels in an array
-$("#studyLevelId option").each(function()
-{
-    var studyLevel={};
-    studyLevel.id=$(this).val();
-    studyLevel.name=$(this).text();
-    studyLevelArray.push(studyLevel);          
-});
-//for removing select option
-studyLevelArray.splice(0,1);
-var i=0;
-var stateIndex=0,districtIndex=0,mandalIndex=0;
-for(var i=0;i<statesArray.length;i++){	
-	(function(i) {
-		getDistrictsForState(statesArray[i].id);
-     })(i);
-}
-	
- function saveStateDataInDatabase(statesArray){
+function saveStateDataInDatabase(statesArray){
  	$.ajax({
 		type : "POST",
 		url : "http://localhost:4004/saveData",
@@ -48,30 +32,49 @@ for(var i=0;i<statesArray.length;i++){
 			console.log('states array saved')
 		},
 		error : function(xhr, ajaxOptions, thrownError) {
-			//alert(xhr.status);
+			alert(xhr.status);
 		}
 	});
  }
 
-function saveDistrictDataInDatabase(districtArray){ 	
+ saveStateDataInDatabase(statesArray);
+
+ //*******Saving Study Levels in Database*******
+
+ //get names of study levels in an array
+$("#studyLevelId option").each(function()
+{
+    var studyLevel={};
+    studyLevel.id=$(this).val();
+    studyLevel.name=$(this).text();
+    studyLevelArray.push(studyLevel);          
+});
+//for removing select option
+studyLevelArray.splice(0,1);
+
+ function saveStudyLevelsInDatabase(studyLevelArray){
  	$.ajax({
 		type : "POST",
 		url : "http://localhost:4004/saveData",
 		dataType : 'json',
 		data : 
 		{
-			type : 'district',
-			data : districtArray
+			type : 'studyLevel',
+			data : studyLevelArray
 		},
 		success : function(response) 
-		{				
-			console.log('districts array saved')
+		{
+			console.log('study Level array saved')
 		},
 		error : function(xhr, ajaxOptions, thrownError) {
-			//alert(xhr.status);
+			alert(xhr.status);
 		}
 	});
  }
+
+ saveStudyLevelsInDatabase(studyLevelArray);
+
+//**********getting districts data and then saving it in database**********
 
 function getDistrictsForState(stateId){
 	$.ajax({
@@ -88,27 +91,91 @@ function getDistrictsForState(stateId){
 		success : function(response) 
 		{				
 			var info = response.split("#");
-			districtArray=[];
+			districtArrayTemp=[];
 		    for(var j=0;j<info.length;j++){
 				(function(j) {
 					var districtObj={};
 					districtObj.stateId=stateId;
 			    	districtObj.districtId=info[j].split('@')[0];
 			    	districtObj.districtName=info[j].split('@')[1];			    	
-			    	districtArray.push(districtObj);
+			    	districtArrayTemp.push(districtObj);
+			    	districtArray.push(districtObj)
 			     })(j);
 		    }
 		    saveDistrictDataInDatabase(districtArray);
 		},
 		error : function(xhr, ajaxOptions, thrownError) {
-			//alert(xhr.status);
+			alert(xhr.status);
 		}
 	});    
 }
 
+function saveDistrictDataInDatabase(districtArray){ 	
+ 	$.ajax({
+		type : "POST",
+		url : "http://localhost:4004/saveData",
+		dataType : 'json',
+		data : 
+		{
+			type : 'district',
+			data : districtArray
+		},
+		success : function(response) 
+		{
+			console.log(response)			
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			//alert(xhr.status);
+		}
+	});
+ }
 
+for(var i=0;i<statesArray.length;i++){	
+	(function(i) {
+		getDistrictsForState(statesArray[i].id);
+     })(i);
+}
+
+//get mandals from saved states and district data 
+function getSavedDistrictsFromDatabase(){
+	$.ajax({
+		type : "GET",
+		url : "http://localhost:4004/getDistricts",
+		dataType : 'json',		
+		success : function(response) 
+		{
+			districtArray=response;			
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			//alert(xhr.status);
+		}
+	});
+}
+
+getSavedDistrictsFromDatabase();
+
+function saveMandaDataInDatabase(mandalsArray){ 	
+ 	$.ajax({
+		type : "POST",
+		url : "http://localhost:4004/saveData",
+		dataType : 'json',
+		data : 
+		{
+			type : 'mandal',
+			data : mandalsArray
+		},
+		success : function(response) 
+		{
+			console.log(response)
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			//alert(xhr.status);
+		}
+	});
+ }
 
 function getMandalsForDistrict(stateId,districtId){
+
 	$.ajax({
 		type : "POST",
 		url : "ajaxActions.do?mode=getDistrictsMandalsVillagesDropDownList",
@@ -124,14 +191,14 @@ function getMandalsForDistrict(stateId,districtId){
 		success : function(response) 
 		{
 			var infoMandal = response.split("#");
-			mandalArray=[];			
+			mandalArrayTemp=[];			
 		    for(var k=0;k<infoMandal.length;k++){							    	
-		    	var mandalObj={};
-		    	mandalObj.stateId=stateId;
-		    	mandalObj.districtId=districtId;
-		    	mandalObj.mandalId=parseInt(infoMandal[k].split('@')[0]);
-		    	mandalObj.mandalName=infoMandal[k].split('@')[1];
-		    	getInstitutesForMandal(stateId,districtId,mandalObj.mandalId)
+		    	var mandalObj={};		    	
+		    	mandalObj.district_id=districtId;
+		    	mandalObj.mandal_id=parseInt(infoMandal[k].split('@')[0]);
+		    	mandalObj.mandal_name=infoMandal[k].split('@')[1];		    	
+		    	mandalArrayTemp.push(mandalObj);
+		    	saveMandaDataInDatabase(mandalArrayTemp);
 		    	mandalArray.push(mandalObj);
 		    }
 		},
@@ -140,6 +207,32 @@ function getMandalsForDistrict(stateId,districtId){
 		}
 	});
 }
+
+for(var i=0;i<districtArray.length;i++){	
+	(function(i) {
+		getMandalsForDistrict(districtArray[i].state_id,districtArray[i].district_id);
+     })(i);
+}
+
+//*************get institutes from mandal information taken from database **********
+
+
+function getSavedMandalsFromDatabase(){
+	$.ajax({
+		type : "GET",
+		url : "http://localhost:4004/getMandals",
+		dataType : 'json',		
+		success : function(response) 
+		{
+			mandalArray=response;			
+		},
+		error : function(xhr, ajaxOptions, thrownError) {
+			alert(xhr.status);
+		}
+	});
+}
+
+getSavedMandalsFromDatabase();
 
 function getInstitutesForMandal(stateId,districtId,mandalId){
 	$.ajax({
@@ -157,7 +250,6 @@ function getInstitutesForMandal(stateId,districtId,mandalId){
 		success : function(response) 
 		{			
 			var info = response.split("#");			
-			instituteArray=[];
 			for(var k=0;k<info.length;k++){
 				var instututeId=info[k].split('@')[0];
 				var instituteObj={};
@@ -173,4 +265,39 @@ function getInstitutesForMandal(stateId,districtId,mandalId){
 			alert(xhr.status + " --> Error Ocucured while loading course info");
 		}
 	});
+}
+
+for(var i=0;i<1000;i++){	
+	(function(i) {
+		getInstitutesForMandal(mandalArray[i].state_id,mandalArray[i].district_id,mandalArray[i].mandal_id);
+     })(i);
+}
+
+//save institutes in database
+
+var index=0;
+saveInstitutesInDatabase();
+function saveInstitutesInDatabase(){
+	(function(i) {
+		$.ajax({
+			type : "POST",
+			url : "http://localhost:4004/saveInstitutes" ,
+			cache : false,
+			dataType : "html",
+			data : {				
+			  	data : instituteArray[index]
+			},
+			success : function(response) 
+			{			
+				console.log(response);
+				if(index < instituteArray.length){
+					index++;
+					saveInstitutesInDatabase();
+				}				
+			},
+			error : function(xhr, ajaxOptions, thrownError) {
+				alert(xhr.status + " --> Error Ocucured while loading course info");
+			}
+		});
+	 })(i);
 }
